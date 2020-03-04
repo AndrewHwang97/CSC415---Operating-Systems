@@ -1,61 +1,71 @@
-
 /**************************************************************
-* Class: CSC-415-0# Spring 2020
+* Class: CSC-415-02 Spring 2020
 * Name: Andrew Hwang
 * Student ID: 918450486
 * Project: Assignment 1 – Simple Shell
 *
-* File: <name of this file>
+* File: Assignment1.c
 *
-* Description:
+* Description: A simple shell that uses fork() and execvp()
+*              to take commands from the command line
 *
 **************************************************************/
 #include <stdio.h>
+#include <string.h>
+
 #define BYTEBUFFER 1024 
 
-
 int main(){
-    char input[BYTEBUFFER];
-    char* argv[100];
-    int argc;
-    while(1){
+    char input[BYTEBUFFER]; //line from command line ls -l
+  
+    
+    while(1){       //loop
         printf("Prompt$ ");
-        fgets(input, BYTEBUFFER, stdin);
-        char* token = strtok(input, " ");
+        fgets(input, BYTEBUFFER, stdin); //gets an input line from the user
+
+        int len = strlen(input); //gets the length of the line
+        if(len == 1) //if there is one character(\0), we want to exit
+            break;
+
+        if(input[len - 1] == '\n') //we want to change the new line to a null character
+            input[len - 1] = '\0';
+
+        if(strcmp(input, "exit") == 0) //if user enters exit, close program
+            return 0;
+
+
+        char *token = strtok(input, " "); //beginning of string tokenization
+        char *line[50]; //used for tokenized string[ls , -l]
+
         int i = 0;
         while (token != NULL){
-            argv[i] = token;
+            line[i] = token;    //places each arg into the execLine
             token = strtok(NULL," ");
             i++;
         }
-        argv[i] = NULL;
-        argc = i;
-        for(int i = 0; i < argc; i++){
-            printf("%s\n", argv[i]);
+        line[i] = NULL; //sets the last value to null
 
+        char execPath[100]; //the path that will be used when we call exec [/bin/ls -l]
+    
+        strcpy(execPath, "/bin/"); //adds "/bin/" to the path          
+        strcat(execPath, line[0]); //creates a "/bin/{command}" string          
+
+        int pid= fork();   //begins fork           
+
+        if(pid < 0){
+            printf("FORK ERROR"); //if no fork, print error
         }
+        if(pid==0){               
+            execvp(execPath,line); //if there is child, execute
 
-        char* execPath[50];
-        strcpy(execPath, "/bin/");           //copy /bin/ to file path
-        strcat(execPath, argv[0]);            //add program to path
-
-        for(i=0; i<strlen(execPath); i++){    //delete newline
-            if(execPath[i]=='\n'){      
-                execPath[i]='\0';
-            }
-        }
-        int pid= fork();              //fork child
-
-        if(pid==0){               //Child
-            execvp(execPath,argv);
-            fprintf(stderr, "Child process could not do execvp\n");
-
-        }else{                    //Parent
-            wait(NULL);
-            printf("Child exited\n");
-        }
-
+        }                    
+        
+        wait(NULL);
+        printf("Child %d exited\n" , getpid());
+        //endloop
     }
 
     return 0;
 }
+
+
